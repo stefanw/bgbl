@@ -34,6 +34,7 @@ class BGBLScraper(object):
     def __init__(self, min_year=1949, max_year=10000,
                  create_document=True, document_path=None, part_count=2):
         self.document_path = document_path
+        self.create_document = create_document
         self.login()
         self.max_year = max_year
         self.min_year = min_year
@@ -190,7 +191,8 @@ if __name__ == '__main__':
     bgbl = BGBLScraper(
         min_year=1949,
         max_year=datetime.datetime.now().year,
-        document_path=documents
+        document_path=documents,
+        create_document=True
     )
     for item in bgbl.scrape():
         table.upsert(item, ['row_id'])
