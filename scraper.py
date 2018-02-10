@@ -32,13 +32,13 @@ class BGBLScraper(object):
     toc = {}
 
     def __init__(self, min_year=1949, max_year=10000,
-                 create_document=True, document_path=None, part_count=2):
+                 create_document=True, document_path=None, parts=(1, 2)):
         self.document_path = document_path
         self.create_document = create_document
         self.login()
         self.max_year = max_year
         self.min_year = min_year
-        self.part_count = part_count
+        self.parts = parts
 
     def login(self):
         self.session = requests.Session()
@@ -61,7 +61,7 @@ class BGBLScraper(object):
 
     def scrape(self):
         self.toc_offsets = self.get_base_toc()
-        for part in range(1, self.part_count + 1):
+        for part in self.parts:
             print(part)
             yield from self.get_main_toc_part(part)
 
