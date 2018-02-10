@@ -46,7 +46,6 @@ class BGBLScraper(object):
 
     def get(self, url, **kwargs):
         while True:
-            print(url)
             response = self.session.get(url, **kwargs)
             if not kwargs and 'Session veraltet' in response.text:
                 print('Session expired...')
@@ -96,7 +95,7 @@ class BGBLScraper(object):
             yield from self.get_year_toc(part, year, item)
 
     def get_year_toc(self, part, year, doc_item):
-        print("Getting Year TOC %d for %d" % (year, part))
+        print("Getting Year %d for %d" % (year, part))
         year_doc_id = doc_item['id']
         url = self.AJAX.format(docid=year_doc_id)
         doc = self.get_json(url)
@@ -137,7 +136,6 @@ class BGBLScraper(object):
             name = link.text_content().strip()
             href = link.attrib['href']
             text = divs[2].text_content().strip()
-            print(text)
             match = re.search(r'aus +Nr. +(\d+) +vom +(\d{1,2}\.\d{1,2}\.\d{4}),'
                               r' +Seite *(\d*)\w?\.?$', text)
             page = None
@@ -160,7 +158,6 @@ class BGBLScraper(object):
             order_num += 1
 
     def download_document(self, part, year, number, doc):
-        print('Download document', part, year, number)
         fragment = doc['nextfragment']
         pdf_viwer_url = self.BASE_URL + self.PDF_VIEWER.format(fragment=fragment)
         # Set session state to retrieve URL
@@ -173,12 +170,13 @@ class BGBLScraper(object):
         response = self.get(url, stream=True)
         if response.status_code == 200:
             if self.document_path:
+                print('Download document', part, year, number)
                 path = self.get_download_dir(part, year, number)
                 path = os.path.join(path, '%s.pdf' % number)
                 with open(path, 'wb') as f:
                     for chunk in response:
                         f.write(chunk)
-            print(response.url)
+                print(response.url)
             return response.url
 
 
@@ -192,7 +190,7 @@ if __name__ == '__main__':
         min_year=1949,
         max_year=datetime.datetime.now().year,
         document_path=documents,
-        create_document=True
+        create_document=True,
     )
     for item in bgbl.scrape():
         table.upsert(item, ['row_id'])
