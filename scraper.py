@@ -25,7 +25,7 @@ class BGBLScraper(object):
     )
     PDF_META = ('text.xav?SID=&start=%2F%2F*[%40node_id%3D%27{fragment}%27]&'
                 'skin=&tf=xaver.component.Text_0&hlf=xaver.component.Hitlist_0')
-    PDF_REDIRECT = 'media.xav/bgbl{part}_{year}_{num}.pdf?SID=&name=..%2Fdocuments%2Fbgbl{part}_{year}_{num}.pdf&iid={docid}'
+    PDF_REDIRECT = 'media.xav/bgbl{part}_{year}_{num}.pdf?SID=&name=..%2F..%2Fdocuments%2Fbgbl{part}_{year}_{num}.pdf&iid={docid}'
 
     year_toc = defaultdict(dict)
     year_docs = defaultdict(dict)
