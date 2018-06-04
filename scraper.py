@@ -3,6 +3,7 @@ import re
 import os
 import json
 from collections import defaultdict
+import sys
 
 import dataset
 import lxml.html
@@ -187,7 +188,7 @@ if __name__ == '__main__':
     if os.path.exists('documents'):
         documents = 'documents/'
     bgbl = BGBLScraper(
-        min_year=1949,
+        min_year=int(sys.argv[1]) if len(sys.argv) > 1 else 1949,
         max_year=datetime.datetime.now().year,
         document_path=documents,
         create_document=True,
