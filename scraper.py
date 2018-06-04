@@ -20,13 +20,20 @@ class BGBLScraper(object):
             '&qmf=&hlf=xaver.component.Hitlist_0'
             '&bk=bgbl&start=%2F%2F*%5B%40node_id%3D%27{did}%27%5D'
             '&tocid={docid}')
-    PDF_VIEWER = ('text.xav?SID=&tf=xaver.component.Text_0&tocf=&qmf=&'
+    PDF_VIEWER = (
+        'text.xav?SID=&tf=xaver.component.Text_0&tocf=&qmf=&'
         'hlf=xaver.component.Hitlist_0&bk=bgbl&start='
         '%2F%2F*%5B%40node_id%3D%27{fragment}%27%5D&skin=pdf'
     )
-    PDF_META = ('text.xav?SID=&start=%2F%2F*[%40node_id%3D%27{fragment}%27]&'
-                'skin=&tf=xaver.component.Text_0&hlf=xaver.component.Hitlist_0')
-    PDF_REDIRECT = 'media.xav/bgbl{part}_{year}_{num}.pdf?SID=&name=..%2F..%2Fdocuments%2Fbgbl{part}_{year}_{num}.pdf&iid={docid}'
+    PDF_META = (
+        'text.xav?SID=&start=%2F%2F*[%40node_id%3D%27{fragment}%27]&'
+        'skin=&tf=xaver.component.Text_0&hlf=xaver.component.Hitlist_0'
+    )
+
+    PDF_REDIRECT = (
+        'media.xav/bgbl{part}_{year}_{num}.pdf'
+        '?SID=&iid={docid}&_csrf={token}'
+    )
 
     year_toc = defaultdict(dict)
     year_docs = defaultdict(dict)
@@ -137,8 +144,11 @@ class BGBLScraper(object):
             name = link.text_content().strip()
             href = link.attrib['href']
             text = divs[2].text_content().strip()
-            match = re.search(r'aus +Nr. +(\d+) +vom +(\d{1,2}\.\d{1,2}\.\d{4}),'
-                              r' +Seite *(\d*)\w?\.?$', text)
+            match = re.search(
+                r'aus +Nr. +(\d+) +vom +(\d{1,2}\.\d{1,2}\.\d{4}),'
+                r' +Seite *(\d*)\w?\.?$',
+                text
+            )
             page = None
             date = match.group(2)
             if match.group(3):
@@ -160,13 +170,19 @@ class BGBLScraper(object):
 
     def download_document(self, part, year, number, doc):
         fragment = doc['nextfragment']
-        pdf_viwer_url = self.BASE_URL + self.PDF_VIEWER.format(fragment=fragment)
+        pdf_viewer_url = (
+            self.BASE_URL +
+            self.PDF_VIEWER.format(fragment=fragment)
+        )
         # Set session state to retrieve URL
-        response = self.get(pdf_viwer_url)
-        match = re.search(r'iid=(\d+)"', response.text)
+        response = self.get(pdf_viewer_url)
+        match = re.search(r'iid=(\d+)', response.text)
         docid = match.group(1)
+        match = re.search(r'_csrf=(\w+)"', response.text)
+        token = match.group(1)
         url = self.BASE_URL + self.PDF_REDIRECT.format(
             part=part, year=year, num=number, docid=docid,
+            token=token
         )
         response = self.get(url, stream=True)
         if response.status_code == 200:
@@ -179,6 +195,9 @@ class BGBLScraper(object):
                         f.write(chunk)
                 print(response.url)
             return response.url
+        else:
+            print('Could not download', response.status_code,
+                  part, year, number, doc)
 
 
 if __name__ == '__main__':
