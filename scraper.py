@@ -40,9 +40,8 @@ class BGBLScraper(object):
     toc = {}
 
     def __init__(self, min_year=1949, max_year=10000,
-                 create_document=True, document_path=None, parts=(1, 2)):
+                 document_path=None, parts=(1, 2)):
         self.document_path = document_path
-        self.create_document = create_document
         self.login()
         self.max_year = max_year
         self.min_year = min_year
@@ -65,6 +64,15 @@ class BGBLScraper(object):
         path = os.path.join(self.document_path, str(part), str(year))
         os.makedirs(path, exist_ok=True)
         return path
+
+    def get_download_path(self, part, year, number):
+        path = self.get_download_dir(part, year, number)
+        path = os.path.join(path, '%s.pdf' % number)
+        return path
+
+    def document_exists(self, part, year, number):
+        path = self.get_download_path(part, year, number)
+        return os.path.exists(path)
 
     def scrape(self):
         self.toc_offsets = self.get_base_toc()
@@ -125,7 +133,7 @@ class BGBLScraper(object):
         url = self.TEXT.format(did=item['did'], docid=item['id'])
         doc = self.get_json(url)
         doc_url = None
-        if self.create_document:
+        if not self.document_exists(part, year, number):
             doc_url = self.download_document(part, year, number, doc)
 
         root = lxml.html.fromstring(doc['innerhtml'])
@@ -188,8 +196,7 @@ class BGBLScraper(object):
         if response.status_code == 200:
             if self.document_path:
                 print('Download document', part, year, number)
-                path = self.get_download_dir(part, year, number)
-                path = os.path.join(path, '%s.pdf' % number)
+                path = self.get_download_path(part, year, number)
                 with open(path, 'wb') as f:
                     for chunk in response:
                         f.write(chunk)
@@ -210,7 +217,6 @@ if __name__ == '__main__':
         min_year=int(sys.argv[1]) if len(sys.argv) > 1 else 1949,
         max_year=datetime.datetime.now().year,
         document_path=documents,
-        create_document=True,
     )
     for item in bgbl.scrape():
         table.upsert(item, ['row_id'])
