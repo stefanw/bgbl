@@ -70,9 +70,11 @@ class BGBLScraper(object):
         path = os.path.join(path, '%s.pdf' % number)
         return path
 
-    def document_exists(self, part, year, number):
+    def should_download(self, part, year, number):
+        if self.document_path is None:
+            return False
         path = self.get_download_path(part, year, number)
-        return os.path.exists(path)
+        return not os.path.exists(path)
 
     def scrape(self):
         self.toc_offsets = self.get_base_toc()
@@ -133,7 +135,7 @@ class BGBLScraper(object):
         url = self.TEXT.format(did=item['did'], docid=item['id'])
         doc = self.get_json(url)
         doc_url = None
-        if not self.document_exists(part, year, number):
+        if self.should_download(part, year, number):
             doc_url = self.download_document(part, year, number, doc)
 
         root = lxml.html.fromstring(doc['innerhtml'])
