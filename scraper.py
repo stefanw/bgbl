@@ -210,11 +210,11 @@ class BGBLScraper(object):
                   part, year, number, doc)
 
 
-def main(document_path=None):
+def main(year=None, document_path=None):
     db = dataset.connect('sqlite:///data.sqlite')
     table = db['data']
     bgbl = BGBLScraper(
-        min_year=int(sys.argv[1]) if len(sys.argv) > 1 else 1949,
+        min_year=int(year) if year is not None else 1949,
         max_year=datetime.datetime.now().year,
         document_path=document_path,
     )
