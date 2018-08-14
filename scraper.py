@@ -61,27 +61,19 @@ class BGBLScraper(object):
                 continue
             return response
 
-    def get_download_dir(self, part, year, number):
-        path = os.path.join(self.document_path, str(part), str(year))
-        os.makedirs(path, exist_ok=True)
-        return path
-
-    def get_download_path(self, part, year, number):
-        path = self.get_download_dir(part, year, number)
+    def get_download_filename(self, part, year, number):
         path_part = self.PATH_TEMPLATE.format(
             part=part, year=year, number=number
         )
-        path = os.path.join(path, path_part)
+        path = os.path.join(self.document_path, path_part)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         return path
 
     def should_download(self, part, year, number):
         if self.document_path is None:
             return False
-        path = self.get_download_path(part, year, number)
-        should = not os.path.exists(path)
-        if should:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-        return should
+        path = self.get_download_filename(part, year, number)
+        return not os.path.exists(path)
 
     def scrape(self):
         self.toc_offsets = self.get_base_toc()
@@ -202,7 +194,7 @@ class BGBLScraper(object):
         if response.status_code == 200:
             if self.document_path:
                 print('Download document', part, year, number)
-                path = self.get_download_path(part, year, number)
+                path = self.get_download_filename(part, year, number)
                 with open(path, 'wb') as f:
                     for chunk in response:
                         f.write(chunk)
