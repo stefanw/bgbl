@@ -78,7 +78,10 @@ class BGBLScraper(object):
         if self.document_path is None:
             return False
         path = self.get_download_path(part, year, number)
-        return not os.path.exists(path)
+        should = not os.path.exists(path)
+        if should:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        return should
 
     def scrape(self):
         self.toc_offsets = self.get_base_toc()
