@@ -34,6 +34,7 @@ class BGBLScraper(object):
         'media.xav/bgbl{part}_{year}_{num}.pdf'
         '?SID=&iid={docid}&_csrf={token}'
     )
+    PATH_TEMPLATE = 'bgbl{part}/{year}/bgbl{part}_{year}_{number}.pdf'
 
     year_toc = defaultdict(dict)
     year_docs = defaultdict(dict)
@@ -67,7 +68,10 @@ class BGBLScraper(object):
 
     def get_download_path(self, part, year, number):
         path = self.get_download_dir(part, year, number)
-        path = os.path.join(path, '%s.pdf' % number)
+        path_part = self.PATH_TEMPLATE.format(
+            part=part, year=year, number=number
+        )
+        path = os.path.join(path, path_part)
         return path
 
     def should_download(self, part, year, number):
@@ -127,9 +131,6 @@ class BGBLScraper(object):
             yield from self.get_toc(part, year, number, item)
 
     def get_toc(self, part, year, number, item):
-        # self.login()
-        # import ipdb; ipdb.set_trace()
-
         url = self.AJAX.format(docid=item['id'])
         doc = self.get_json(url)
         url = self.TEXT.format(did=item['did'], docid=item['id'])
