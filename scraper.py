@@ -210,16 +210,17 @@ class BGBLScraper(object):
                   part, year, number, doc)
 
 
-if __name__ == '__main__':
+def main(document_path=None):
     db = dataset.connect('sqlite:///data.sqlite')
     table = db['data']
-    documents = None
-    if os.path.exists('documents'):
-        documents = 'documents/'
     bgbl = BGBLScraper(
         min_year=int(sys.argv[1]) if len(sys.argv) > 1 else 1949,
         max_year=datetime.datetime.now().year,
-        document_path=documents,
+        document_path=document_path,
     )
     for item in bgbl.scrape():
         table.upsert(item, ['row_id'])
+
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])
