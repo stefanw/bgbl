@@ -1,13 +1,20 @@
-import datetime
-import re
-import os
-import json
 from collections import defaultdict
+import datetime
+import glob
+import json
+import os
+import re
+import shutil
+import subprocess
 import sys
 
 import dataset
 import lxml.html
 import requests
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
 
 
 class BGBLScraper(object):
@@ -198,11 +205,62 @@ class BGBLScraper(object):
                 with open(path, 'wb') as f:
                     for chunk in response:
                         f.write(chunk)
+                self.unlock_pdf(path)
                 print(response.url)
             return response.url
         else:
             print('Could not download', response.status_code,
                   part, year, number, doc)
+
+    def unlock_pdfs(self):
+        for part in self.parts:
+            for year in range(self.min_year, self.max_year + 1):
+                dummy = self.get_download_filename(part, year, 1)
+                dirname = os.path.dirname(dummy)
+                for path in glob.glob(os.path.join(dirname, '*.pdf')):
+                    if path.endswith('_original.pdf'):
+                        continue
+                    if self.pdf_is_encrypted(path):
+                        print('Unlocking', path)
+                        result = self.unlock_pdf(path)
+                        if not result:
+                            print('Could not unlock. Exit.')
+                            return
+
+    def pdf_is_encrypted(self, path):
+        if PyPDF2 is None:
+            return None
+        with open(path, 'rb') as f:
+            return PyPDF2.PdfFileReader(f).isEncrypted
+
+    def unlock_pdf(self, path):
+        original_path = path.replace('.pdf', '_original.pdf')
+        shutil.move(path, original_path)
+        result = subprocess.run(
+            [
+                'gs', '-q', '-dNOPAUSE', '-dBATCH',
+                '-sDEVICE=pdfwrite',
+                '-sOutputFile=%s' % path,
+                '-c', '.setpdfwrite',
+                '-f', original_path
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if result.returncode != 0:
+            print(result.stdout)
+            print(result.stderr)
+            return False
+        return True
+
+
+def unlock(year=None, document_path=None):
+    bgbl = BGBLScraper(
+        min_year=int(year) if year is not None else 1949,
+        max_year=datetime.datetime.now().year,
+        document_path=document_path,
+    )
+    bgbl.unlock_pdfs()
 
 
 def main(year=None, document_path=None):

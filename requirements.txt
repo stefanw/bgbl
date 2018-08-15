@@ -2,3 +2,4 @@ lxml
 cssselect
 requests
 dataset
+PyPDF2
