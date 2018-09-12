@@ -1,3 +1,4 @@
+import argparse
 from collections import defaultdict
 import datetime
 import glob
@@ -6,7 +7,6 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 
 import dataset
 import lxml.html
@@ -47,13 +47,13 @@ class BGBLScraper(object):
     year_docs = defaultdict(dict)
     toc = {}
 
-    def __init__(self, min_year=1949, max_year=10000,
-                 document_path=None, parts=(1, 2)):
+    def __init__(self, years=None, document_path=None, parts=(1, 2)):
         self.document_path = document_path
+        if years is None:
+            years = range(1949, datetime.datetime.now().year + 1)
+        self.years = list(years)
+        self.parts = list(parts)
         self.login()
-        self.max_year = max_year
-        self.min_year = min_year
-        self.parts = parts
 
     def login(self):
         self.session = requests.Session()
@@ -113,7 +113,7 @@ class BGBLScraper(object):
                 year = int(item['l'])
             except ValueError:
                 continue
-            if not (self.min_year <= year <= self.max_year):
+            if year not in self.years:
                 continue
             self.login()
             yield from self.get_year_toc(part, year, item)
@@ -214,7 +214,7 @@ class BGBLScraper(object):
 
     def unlock_pdfs(self):
         for part in self.parts:
-            for year in range(self.min_year, self.max_year + 1):
+            for year in self.years:
                 dummy = self.get_download_filename(part, year, 1)
                 dirname = os.path.dirname(dummy)
                 for path in glob.glob(os.path.join(dirname, '*.pdf')):
@@ -263,17 +263,45 @@ def unlock(year=None, document_path=None):
     bgbl.unlock_pdfs()
 
 
-def main(year=None, document_path=None):
-    db = dataset.connect('sqlite:///data.sqlite')
-    table = db['data']
+def create_range_argument(arg):
+    if arg is None:
+        return None
+    arg = str(arg)
+    parts = arg.split(',')
+    for part in parts:
+        part = part.strip()
+        if '-' in part:
+            start_stop = part.split('-')
+            yield from range(int(start_stop[0]), int(start_stop[1]) + 1)
+        else:
+            yield int(part)
+
+
+def main(document_path=None, years=None, parts=None):
     bgbl = BGBLScraper(
-        min_year=int(year) if year is not None else 1949,
-        max_year=datetime.datetime.now().year,
+        years=create_range_argument(years),
+        parts=create_range_argument(parts),
         document_path=document_path,
     )
+    print('Scraping parts {} and years {}'.format(bgbl.parts, bgbl.years))
+    db = dataset.connect('sqlite:///data.sqlite')
+    table = db['data']
+
     for item in bgbl.scrape():
         table.upsert(item, ['row_id'])
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    parser = argparse.ArgumentParser(description='Scrape BGBl.')
+    parser.add_argument('document_path', default=None, nargs='?',
+                        help='base path to document directory')
+    parser.add_argument('--years', dest='years', action='store',
+                        default=str(datetime.datetime.now().year),
+                        help='Scrape these years, default latest year. '
+                             'Range and comma-separated allowed.')
+    parser.add_argument('--parts', dest='parts', action='store',
+                        default='1,2',
+                        help='Scrape parts, default all parts. '
+                             'Range and comma-separated allowed.')
+    args = parser.parse_args()
+    main(**vars(args))
