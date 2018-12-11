@@ -142,7 +142,7 @@ class BGBLScraper(object):
         url = self.AJAX.format(docid=item['id'])
         doc = self.get_json(url)
         full_edition = [x for x in doc['items'][0]['c']
-                        if x['l'] == 'Komplette Ausgabe']
+                        if 'Komplette Ausgabe' in x['l']]
         if not full_edition:
             url = self.TEXT.format(did=item['did'])
         else:
