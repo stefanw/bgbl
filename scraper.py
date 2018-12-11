@@ -141,23 +141,25 @@ class BGBLScraper(object):
     def get_toc(self, part, year, number, item):
         url = self.AJAX.format(docid=item['id'])
         doc = self.get_json(url)
+        doc_url = None
         full_edition = [x for x in doc['items'][0]['c']
                         if 'Komplette Ausgabe' in x['l']]
-        if not full_edition:
-            url = self.TEXT.format(did=item['did'])
-        else:
+        if full_edition:
             full_edition = full_edition[0]
             url = self.TEXT.format(
                 did=full_edition['did'],
                 docid=full_edition['id']
             )
-        doc = self.get_json(url)
-        doc_url = None
-        if self.should_download(part, year, number):
-            doc_url = self.download_document(
-                part, year, number, full_edition['did']
-            )
+            doc = self.get_json(url)
+            if self.should_download(part, year, number):
+                doc_url = self.download_document(
+                    part, year, number, full_edition['did']
+                )
+        else:
+            print('No full edition available.')
 
+        url = self.TEXT.format(did=item['did'], docid=item['id'])
+        doc = self.get_json(url)
         root = lxml.html.fromstring(doc['innerhtml'])
         order_num = 1
         for tr in root.xpath('//table[1]//tr'):
