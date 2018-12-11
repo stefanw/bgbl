@@ -47,12 +47,16 @@ class BGBLScraper(object):
     year_docs = defaultdict(dict)
     toc = {}
 
-    def __init__(self, years=None, document_path=None, parts=(1, 2)):
+    def __init__(self, years=None, document_path=None, parts=(1, 2),
+                 numbers=None):
         self.document_path = document_path
         if years is None:
             years = range(1949, datetime.datetime.now().year + 1)
         self.years = list(years)
         self.parts = list(parts)
+        self.numbers = None
+        if numbers is not None:
+            self.numbers = list(numbers)
         self.login()
 
     def login(self):
@@ -130,6 +134,8 @@ class BGBLScraper(object):
             if match is None:
                 continue
             number = int(match.group(1))
+            if self.numbers is not None and number not in self.numbers:
+                continue
             yield from self.get_toc(part, year, number, item)
 
     def get_toc(self, part, year, number, item):
@@ -277,10 +283,11 @@ def create_range_argument(arg):
             yield int(part)
 
 
-def main(document_path=None, years=None, parts=None):
+def main(document_path=None, years=None, parts=None, numbers=None):
     bgbl = BGBLScraper(
         years=create_range_argument(years),
         parts=create_range_argument(parts),
+        numbers=create_range_argument(numbers),
         document_path=document_path,
     )
     print('Scraping parts {} and years {}'.format(bgbl.parts, bgbl.years))
@@ -299,6 +306,9 @@ if __name__ == '__main__':
                         default=str(datetime.datetime.now().year),
                         help='Scrape these years, default latest year. '
                              'Range and comma-separated allowed.')
+    parser.add_argument('--numbers', dest='numbers', action='store',
+                        default=None,
+                        help='Scrape these numbers, default all.')
     parser.add_argument('--parts', dest='parts', action='store',
                         default='1,2',
                         help='Scrape parts, default all parts. '
