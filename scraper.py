@@ -30,7 +30,7 @@ class BGBLScraper(object):
     PDF_VIEWER = (
         'text.xav?SID=&tf=xaver.component.Text_0&tocf=&qmf=&'
         'hlf=xaver.component.Hitlist_0&bk=bgbl&start='
-        '%2F%2F*%5B%40node_id%3D%27{fragment}%27%5D&skin=pdf'
+        '%2F%2F*%5B%40node_id%3D%27{node_id}%27%5D&skin=pdf'
     )
     PDF_META = (
         'text.xav?SID=&start=%2F%2F*[%40node_id%3D%27{fragment}%27]&'
@@ -141,11 +141,22 @@ class BGBLScraper(object):
     def get_toc(self, part, year, number, item):
         url = self.AJAX.format(docid=item['id'])
         doc = self.get_json(url)
-        url = self.TEXT.format(did=item['did'], docid=item['id'])
+        full_edition = [x for x in doc['items'][0]['c']
+                        if x['l'] == 'Komplette Ausgabe']
+        if not full_edition:
+            url = self.TEXT.format(did=item['did'])
+        else:
+            full_edition = full_edition[0]
+            url = self.TEXT.format(
+                did=full_edition['did'],
+                docid=full_edition['id']
+            )
         doc = self.get_json(url)
         doc_url = None
         if self.should_download(part, year, number):
-            doc_url = self.download_document(part, year, number, doc)
+            doc_url = self.download_document(
+                part, year, number, full_edition['did']
+            )
 
         root = lxml.html.fromstring(doc['innerhtml'])
         order_num = 1
@@ -187,11 +198,10 @@ class BGBLScraper(object):
             }
             order_num += 1
 
-    def download_document(self, part, year, number, doc):
-        fragment = doc['nextfragment']
+    def download_document(self, part, year, number, node_id):
         pdf_viewer_url = (
             self.BASE_URL +
-            self.PDF_VIEWER.format(fragment=fragment)
+            self.PDF_VIEWER.format(node_id=node_id)
         )
         # Set session state to retrieve URL
         response = self.get(pdf_viewer_url)
