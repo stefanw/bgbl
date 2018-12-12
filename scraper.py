@@ -52,11 +52,9 @@ class BGBLScraper(object):
         self.document_path = document_path
         if years is None:
             years = range(1949, datetime.datetime.now().year + 1)
-        self.years = list(years)
-        self.parts = list(parts)
-        self.numbers = None
-        if numbers is not None:
-            self.numbers = list(numbers)
+        self.years = years
+        self.parts = parts
+        self.numbers = numbers
         self.login()
 
     def login(self):
@@ -299,15 +297,19 @@ def unlock(year=None, document_path=None):
 def create_range_argument(arg):
     if arg is None:
         return None
+
+    def generator(args):
+        for part in parts:
+            part = part.strip()
+            if '-' in part:
+                start_stop = part.split('-')
+                yield from range(int(start_stop[0]), int(start_stop[1]) + 1)
+            else:
+                yield int(part)
+
     arg = str(arg)
     parts = arg.split(',')
-    for part in parts:
-        part = part.strip()
-        if '-' in part:
-            start_stop = part.split('-')
-            yield from range(int(start_stop[0]), int(start_stop[1]) + 1)
-        else:
-            yield int(part)
+    return list(generator(parts))
 
 
 def main(document_path=None, years=None, parts=None, numbers=None):
