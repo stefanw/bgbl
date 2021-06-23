@@ -127,7 +127,7 @@ class BGBLScraper(object):
         doc = self.get_json(url)
         items = doc['items'][0]['c']
         for item in items:
-            match = re.search('Nr\. (\d+) vom (\d{2}\.\d{2}\.\d{4})',
+            match = re.search('Nr\. (\d+) vo[nm] (\d{2}\.\d{2}\.\d{4})',
                               item['l'])
             if match is None:
                 continue
