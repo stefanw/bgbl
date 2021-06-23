@@ -191,7 +191,7 @@ class BGBLScraper(object):
             href = link.attrib['href']
             text = divs[2].text_content().strip()
             match = re.search(
-                r'aus +Nr. +(\d+) +vom +(\d{1,2}\.\d{1,2}\.\d{4}),'
+                r'aus +Nr. +(\d+) +vo[mn] +(\d{1,2}\.\d{1,2}\.\d{4}),'
                 r' +Seite *(\d*)\w?\.?$',
                 text
             )
